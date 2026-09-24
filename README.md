@@ -1,56 +1,89 @@
-# Slate
-Offline text translator built with Tether's QVAC SDK. Runs a local Bergamot NMT model on-device to translate Estonian, Maltese, and other low-resource languages, with no API calls and no data leaving the machine.
+# qvac-translator
 
+A small, fully offline text translator that runs entirely **on your own
+device** using [Tether's QVAC SDK](https://qvac.tether.io). No API key, no
+server call, no bill — and your text never leaves your machine.
 
-# On a Mac:
+It defaults to **Estonian → English**, a genuinely low-resource language
+pair, using a local [Bergamot](https://browser.mt) neural machine
+translation model. It also works with any of the ~50 languages QVAC bundles
+Bergamot models for (Maltese, Icelandic, Albanian, Vietnamese, Swahili
+region languages, etc.) by passing `--from`/`--to`.
 
-1
-Install Node.js
-Go to nodejs.org in your browser. Click the big green download button (it will offer you the right version for Mac automatically). Open the downloaded file and click through the installer using all the default options.
+## What it does
 
-2
-Unzip the project folder
-Find the qvac-translator.zip file you downloaded (usually in your Downloads folder) and double-click it. This creates a regular folder called qvac-translator next to it.
+Loads a Bergamot NMT model on-device with QVAC's `loadModel()`, then
+translates the given text locally with `translate()`. Everything — model
+inference included — runs on the machine you launch it on.
 
-3
-Open the Terminal app
-Press Command + Space to open Spotlight search, type Terminal, and press Enter. A plain black or white text window will open. This is where you'll type commands.
+## Requirements
 
-4
-Go to the project folder in Terminal
-Type cd followed by a space, then drag the qvac-translator folder from Finder straight into the Terminal window. It will fill in the folder location for you. Press Enter.
+- Node.js **>= 22.17**
+- npm **>= 10.9**
+- ~5 GB free disk (for the model cache directory) and a normal internet
+  connection **the first time you run it**, to fetch the (small, ~30 MB)
+  translation model from QVAC's model registry. After that first download,
+  translation is 100% offline.
+- See QVAC's [system requirements](https://docs.qvac.tether.io/system-requirements)
+  for OS/GPU notes (Linux and Windows need a Vulkan 1.4+ driver; macOS uses
+  Metal automatically).
 
-5
-Install the app's required files
-Type npm install and press Enter. This downloads everything the app needs to run. It can take a few minutes and looks like nothing is happening for a while, that's normal, just let it finish.
+## SDK version used
 
-6
-Run the translator
-Type node translate.js followed by a space, then some text in quotes, like node translate.js "Tere, kuidas Sul laheb?" and press Enter. The first time, it will also download a small translation model, then show you the translated text.
+[`@qvac/sdk`](https://www.npmjs.com/package/@qvac/sdk) **^0.19.0** (tested
+against 0.19.1).
 
+## Install
 
-# On Windows:
+```bash
+git clone <this-repo-url>
+cd qvac-translator
+npm install
+```
 
-1
-Install Node.js
-Go to nodejs.org in your browser. Click the big green download button, it will offer you the Windows installer automatically. Open the downloaded file and click Next through the installer using all the default options, then Finish.
+## Run
 
-2
-Unzip the project folder
-Find the qvac-translator.zip file you downloaded (usually in your Downloads folder). Right-click it and choose Extract All, then click Extract. This creates a regular folder called qvac-translator.
+```bash
+# Default: Estonian -> English
+node translate.js "Tere, kuidas Sul läheb?"
 
-3
-Open Command Prompt
-Click the Start menu, type cmd, and press Enter. A plain black text window will open. This is where you'll type commands.
+# Any other bundled pair
+node translate.js --from en --to mt "Where is the nearest pharmacy?"
 
-4
-Go to the project folder
-Type cd followed by a space, then drag the qvac-translator folder from File Explorer straight into the Command Prompt window. It will fill in the folder location for you. Press Enter.
+# Translate a whole text file
+node translate.js --from et --to en --file sample-et.txt
+```
 
-5
-Install the app's required files
-Type npm install and press Enter. This downloads everything the app needs to run. It can take a few minutes and looks like nothing is happening for a while, that's normal, just let it finish.
+Or via npm:
 
-6
-Run the translator
-Type node translate.js followed by a space, then some text in quotes, like node translate.js "Tere, kuidas Sul laheb?" and press Enter. The first time, it will also download a small translation model, then show you the translated text.
+```bash
+npm start -- "Tere, kuidas Sul läheb?"
+```
+
+On the very first run, QVAC downloads the translation model to a local
+cache (`~/.qvac/models` by default) and prints download progress. Every run
+after that loads the model straight from disk and performs inference
+locally — no network calls.
+
+A `qvac.config.json` is included to enable QVAC's own console logs during
+the run, so you can see the SDK's model-loading and inference activity.
+
+## How it works
+
+1. `loadModel()` loads a Bergamot NMT model (e.g. `BERGAMOT_ET_EN`) for the
+   requested language pair, resolved dynamically from the SDK's exported
+   model constants.
+2. `translate()` runs the translation entirely on-device and streams the
+   translated tokens to stdout.
+3. `unloadModel()` frees the model from memory when done.
+
+See [`translate.js`](./translate.js) for the full, ~90-line implementation.
+
+## What app does / which QVAC function it calls
+
+A CLI text translator that calls QVAC's `loadModel()` + `translate()` to
+run an offline Bergamot NMT model on-device.
+
+## License
+
+[MIT](./LICENSE)
